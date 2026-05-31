@@ -36,8 +36,7 @@ Terraform fetches the module on first init.
 
 ## Usage
 
-In a directory owned by an AWS admin (one directory per project — e.g.
-`bootstrap/proxmox/` in an admin-owned `terraform-aws-foundation` repo):
+In a directory owned by an AWS admin (one directory per project):
 
 ```hcl
 terraform {
@@ -63,9 +62,9 @@ provider "aws" {
 module "state_backend" {
   source = "git::https://github.com/dryvist/terraform-aws-template.git?ref=v0.1.0"
 
-  project        = "proxmox"
+  project        = "<project>"
   github_org     = "<github-org>"
-  github_repo    = "terraform-proxmox"
+  github_repo    = "<consuming-repo>"
   branch_pattern = "main"
 
   operator_user_arns = [
@@ -133,7 +132,7 @@ After the first apply succeeds, uncomment the `backend "s3"` block above
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `project` | `string` | — | Short kebab-case project id (e.g. `proxmox`) |
+| `project` | `string` | — | Short kebab-case project id |
 | `github_org` | `string` | — | GitHub org that owns the consuming repo |
 | `github_repo` | `string` | — | Name of the consuming repo |
 | `branch_pattern` | `string` | `main` | Branch CI may assume from on push (StringLike on OIDC sub) |
@@ -162,8 +161,8 @@ terraform {
   required_version = ">= 1.10"
 
   backend "s3" {
-    bucket       = "tfstate-proxmox-<account-id>"
-    key          = "proxmox/terraform.tfstate"
+    bucket       = "tfstate-<project>-<account-id>"
+    key          = "<project>/terraform.tfstate"
     region       = "us-east-1"
     use_lockfile = true
     encrypt      = true

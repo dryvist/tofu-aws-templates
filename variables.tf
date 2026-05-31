@@ -1,5 +1,5 @@
 variable "project" {
-  description = "Short kebab-case project id. Matches the consuming repo's last path segment (e.g. \"proxmox\" for \"terraform-proxmox\")."
+  description = "Short kebab-case project id. Matches the consuming repo's last path segment."
   type        = string
 
   validation {
