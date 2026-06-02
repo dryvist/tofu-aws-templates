@@ -1,0 +1,5 @@
+default: true
+MD013: false   # line length — prose flows freely
+MD024: false   # duplicate headings — OK in changelogs
+MD033: false   # inline HTML — needed for mermaid + collapsible sections
+MD041: false   # first line top-level heading — frontmatter conflicts

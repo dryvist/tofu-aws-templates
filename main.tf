@@ -1,12 +1,26 @@
 data "aws_caller_identity" "current" {}
 
+# GitHub Actions OIDC provider is account-global. By default we look up the
+# existing one; set create_oidc_provider=true for the first project bootstrapped
+# in a fresh account. thumbprint_list is intentionally omitted — AWS uses its own
+# trusted root CAs for the GitHub IdP, so any configured thumbprint is unused.
+resource "aws_iam_openid_connect_provider" "github" {
+  count          = var.create_oidc_provider ? 1 : 0
+  url            = "https://token.actions.githubusercontent.com"
+  client_id_list = ["sts.amazonaws.com"]
+  tags           = local.tags
+}
+
 data "aws_iam_openid_connect_provider" "github" {
-  url = "https://token.actions.githubusercontent.com"
+  count = var.create_oidc_provider ? 0 : 1
+  url   = "https://token.actions.githubusercontent.com"
 }
 
 locals {
   bucket_name = "tfstate-${var.project}-${data.aws_caller_identity.current.account_id}"
   role_name   = "tf-${var.project}"
+
+  github_oidc_arn = var.create_oidc_provider ? aws_iam_openid_connect_provider.github[0].arn : data.aws_iam_openid_connect_provider.github[0].arn
 
   tags = {
     Project     = var.project
@@ -95,7 +109,7 @@ resource "aws_iam_role" "terraform" {
         {
           Sid       = "GitHubOIDCBranchPush"
           Effect    = "Allow"
-          Principal = { Federated = data.aws_iam_openid_connect_provider.github.arn }
+          Principal = { Federated = local.github_oidc_arn }
           Action    = "sts:AssumeRoleWithWebIdentity"
           Condition = {
             StringEquals = {
@@ -109,7 +123,7 @@ resource "aws_iam_role" "terraform" {
         {
           Sid       = "GitHubOIDCPullRequest"
           Effect    = "Allow"
-          Principal = { Federated = data.aws_iam_openid_connect_provider.github.arn }
+          Principal = { Federated = local.github_oidc_arn }
           Action    = "sts:AssumeRoleWithWebIdentity"
           Condition = {
             StringEquals = {
@@ -121,6 +135,16 @@ resource "aws_iam_role" "terraform" {
           }
         },
       ],
+      # Base-identity assume path (no MFA): the shared `terraform` IAM user that
+      # aws-vault uses as source_profile assumes this role with no prompt. This is
+      # the fleet's primary local/CI-source assume path.
+      length(var.source_principal_arns) > 0 ? [{
+        Sid       = "BaseIdentityAssume"
+        Effect    = "Allow"
+        Principal = { AWS = var.source_principal_arns }
+        Action    = "sts:AssumeRole"
+      }] : [],
+      # Optional direct human-operator assume path, MFA enforced.
       length(var.operator_user_arns) > 0 ? [{
         Sid       = "OperatorAssumeWithMFA"
         Effect    = "Allow"
@@ -155,4 +179,14 @@ resource "aws_iam_role_policy" "state" {
       },
     ]
   })
+}
+
+# Optional extra permissions for projects that manage AWS resources beyond their
+# own state (e.g. Route53, EC2/VPC). State-only projects (like terraform-unifi)
+# leave additional_policy_json empty and get the state policy alone.
+resource "aws_iam_role_policy" "additional" {
+  count  = var.additional_policy_json != "" ? 1 : 0
+  name   = "${local.role_name}-additional"
+  role   = aws_iam_role.terraform.id
+  policy = var.additional_policy_json
 }

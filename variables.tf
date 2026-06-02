@@ -30,10 +30,28 @@ variable "operator_user_arns" {
   default     = []
 }
 
+variable "source_principal_arns" {
+  description = "IAM principal ARNs allowed to assume this role WITHOUT MFA — the shared `terraform` base identity used as the aws-vault `source_profile` (and the CI source profile). This is the fleet's primary assume path: `terraform` -> `tf-<project>` with no prompt. Empty list disables it."
+  type        = list(string)
+  default     = []
+}
+
+variable "additional_policy_json" {
+  description = "Optional inline IAM policy JSON granting permissions beyond the state bucket (e.g. Route53 for a DNS project, EC2/VPC for a compute project). Empty string attaches no extra policy. Pass jsonencode(...) or a data.aws_iam_policy_document.json."
+  type        = string
+  default     = ""
+}
+
+variable "create_oidc_provider" {
+  description = "Create the account-global GitHub Actions OIDC provider instead of looking up an existing one. Set true for the FIRST project bootstrapped in a fresh account; leave false everywhere else (the provider is account-wide and must exist exactly once)."
+  type        = bool
+  default     = false
+}
+
 variable "aws_region" {
   description = "Region for the state bucket. The consuming repo's backend.tf must use the same region."
   type        = string
-  default     = "us-east-1"
+  default     = "us-east-2"
 }
 
 variable "noncurrent_version_expiration_days" {
