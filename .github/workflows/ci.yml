@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate (${{ matrix.dir }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        dir: [".", "examples/complete"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: opentofu/setup-opentofu@v2
+      - name: Init
+        run: tofu init -backend=false
+        working-directory: ${{ matrix.dir }}
+      - name: Validate
+        run: tofu validate -no-color
+        working-directory: ${{ matrix.dir }}
+
+  test:
+    name: Tofu Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: opentofu/setup-opentofu@v2
+      - run: tofu init -backend=false
+      - run: tofu test -no-color
+
+  lint:
+    name: Format and Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: opentofu/setup-opentofu@v2
+      - name: Format check
+        run: tofu fmt -check -recursive
+      - uses: terraform-linters/setup-tflint@v4
+      - run: tflint --init
+      - name: TFLint
+        run: >-
+          tflint --minimum-failure-severity=error
+          --only=terraform_deprecated_interpolation
+          --only=terraform_deprecated_index
+          --only=terraform_unused_declarations
+          --only=terraform_comment_syntax
+          --only=terraform_documented_outputs
+          --only=terraform_documented_variables
+          --only=terraform_typed_variables
+          --only=terraform_module_pinned_source
+          --only=terraform_naming_convention
+          --only=terraform_required_version
+          --only=terraform_required_providers

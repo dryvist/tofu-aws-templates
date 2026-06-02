@@ -25,7 +25,7 @@ output "state_key_prefix" {
 
 output "backend_config" {
   description = "S3 backend block ready to paste into the consuming repo's backend.tf."
-  value = <<-EOT
+  value       = <<-EOT
     terraform {
       backend "s3" {
         bucket       = "${aws_s3_bucket.state.bucket}"

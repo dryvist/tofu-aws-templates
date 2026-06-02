@@ -1,19 +1,24 @@
 # terraform-aws-template
 
 Starting template for any new AWS-backed Terraform / OpenTofu / Terragrunt
-repo. The v0.1.0 module bootstraps everything a new repo needs to use AWS
-for state:
+repo. The module bootstraps everything a new repo needs to use AWS for state:
 
 - S3 state bucket (SSE-S3 AES-256, versioned, public-access-blocked, TLS-only)
-- IAM role with combined trust policy: GitHub Actions OIDC for CI
-  plus named operator IAM users with MFA for local dev
-- IAM permissions policy scoped to that one bucket only —
-  no other AWS access
+- IAM role `tf-<project>` with a combined trust policy:
+  - the shared `terraform` base identity assumes it with **no MFA** — the
+    aws-vault `source_profile` path, and the fleet's primary local/CI-source
+    assume path (`source_principal_arns`)
+  - GitHub Actions OIDC for CI (branch push + pull_request)
+  - optional named operator IAM users, MFA enforced (`operator_user_arns`)
+- IAM permissions policy scoped to that one bucket only, plus an optional
+  `additional_policy_json` for projects that manage AWS resources beyond state
 
 S3 native locking (`use_lockfile = true`, Terraform 1.10+ / OpenTofu 1.10+)
 replaces DynamoDB lock tables. SSE-S3 replaces SSE-KMS — same AES-256 cipher,
 no per-key or per-API-call cost. State access is gated at the IAM role's
-trust policy, not at a KMS key policy.
+trust policy, not at a KMS key policy. Cross-region replication, access
+logging, and event notifications are intentionally omitted to keep the backend
+cheap — state durability comes from versioning.
 
 Operator-facing walkthrough:
 <https://docs.jacobpevans.com/infrastructure/terraform/aws-bootstrap>.
@@ -25,7 +30,7 @@ by its git URL with a pinned ref:
 
 ```hcl
 module "state_backend" {
-  source = "git::https://github.com/dryvist/terraform-aws-template.git?ref=v0.1.0"
+  source = "git::https://github.com/dryvist/terraform-aws-template.git?ref=v0.2.0"
 
   # ... inputs (see API section below)
 }
@@ -49,24 +54,30 @@ terraform {
   # backend "s3" {
   #   bucket       = "tfstate-<project>-<account-id>"
   #   key          = "_bootstrap/terraform.tfstate"
-  #   region       = "us-east-1"
+  #   region       = "us-east-2"
   #   use_lockfile = true
   #   encrypt      = true
   # }
 }
 
 provider "aws" {
-  region = "us-east-1"
+  region = "us-east-2"
 }
 
 module "state_backend" {
-  source = "git::https://github.com/dryvist/terraform-aws-template.git?ref=v0.1.0"
+  source = "git::https://github.com/dryvist/terraform-aws-template.git?ref=v0.2.0"
 
   project        = "<project>"
   github_org     = "<github-org>"
   github_repo    = "<consuming-repo>"
   branch_pattern = "main"
 
+  # The shared `terraform` base identity assumes the role with no MFA.
+  source_principal_arns = [
+    "arn:aws:iam::<account-id>:user/terraform",
+  ]
+
+  # Optional: named human operators (MFA enforced).
   operator_user_arns = [
     "arn:aws:iam::<account-id>:user/<operator>",
   ]
@@ -102,7 +113,10 @@ After the first apply succeeds, uncomment the `backend "s3"` block above
     --query 'OpenIDConnectProviderList[?contains(Arn, `token.actions.githubusercontent.com`)]'
   ```
 
-  Create once per account if missing:
+  Either create it once per account out of band (below), or set
+  `create_oidc_provider = true` on the FIRST project bootstrapped in the
+  account — leave it false everywhere else, since the provider is
+  account-global and must exist exactly once:
 
   ```bash
   aws iam create-open-id-connect-provider \
@@ -110,9 +124,12 @@ After the first apply succeeds, uncomment the `backend "s3"` block above
     --client-id-list sts.amazonaws.com
   ```
 
-- Each operator has an IAM user with MFA enabled, plus a policy granting
-  only `sts:AssumeRole` on `arn:aws:iam::<account-id>:role/tf-*`. The
-  operator's IAM user ARN goes into `operator_user_arns`.
+- A shared `terraform` base IAM user whose own policy grants `sts:AssumeRole`
+  on `arn:aws:iam::<account-id>:role/tf-*`. Its ARN goes into
+  `source_principal_arns` so aws-vault (`source_profile = terraform`) assumes
+  the role with no MFA. This is the fleet's primary assume path.
+- Optional: each operator has an IAM user with MFA enabled and the same
+  `sts:AssumeRole` grant; their ARNs go into `operator_user_arns`.
 
 ## What gets provisioned
 
@@ -125,6 +142,9 @@ After the first apply succeeds, uncomment the `backend "s3"` block above
 - `aws_s3_bucket_policy.deny_insecure_transport` — TLS-only
 - `aws_iam_role.terraform` — `tf-<project>` with the combined trust policy
 - `aws_iam_role_policy.state` — scoped to the one bucket only
+- `aws_iam_role_policy.additional` — only when `additional_policy_json` is set
+- `aws_iam_openid_connect_provider.github` — only when
+  `create_oidc_provider = true` (otherwise the existing one is looked up)
 
 ## API
 
@@ -136,8 +156,11 @@ After the first apply succeeds, uncomment the `backend "s3"` block above
 | `github_org` | `string` | — | GitHub org that owns the consuming repo |
 | `github_repo` | `string` | — | Name of the consuming repo |
 | `branch_pattern` | `string` | `main` | Branch CI may assume from on push (StringLike on OIDC sub) |
+| `source_principal_arns` | `list(string)` | `[]` | Principal ARNs (the shared `terraform` base identity) allowed to AssumeRole with **no MFA** |
 | `operator_user_arns` | `list(string)` | `[]` | IAM user ARNs allowed to AssumeRole with MFA |
-| `aws_region` | `string` | `us-east-1` | Region for the state bucket |
+| `additional_policy_json` | `string` | `""` | Optional inline IAM policy JSON for permissions beyond state |
+| `create_oidc_provider` | `bool` | `false` | Create the account-global GitHub OIDC provider instead of looking it up |
+| `aws_region` | `string` | `us-east-2` | Region for the state bucket |
 | `noncurrent_version_expiration_days` | `number` | `90` | Lifecycle expiry for old state versions |
 
 ### Outputs
@@ -163,7 +186,7 @@ terraform {
   backend "s3" {
     bucket       = "tfstate-<project>-<account-id>"
     key          = "<project>/terraform.tfstate"
-    region       = "us-east-1"
+    region       = "us-east-2"
     use_lockfile = true
     encrypt      = true
   }
@@ -185,10 +208,13 @@ Issues and pull requests welcome on
 
 Before opening a PR:
 
-- Run `terraform fmt -recursive` to canonicalize formatting.
-- Run `terraform validate` (no apply needed) to confirm the module parses.
-- Keep changes scoped — this module exists to provision exactly one
-  per-project state backend, nothing more.
+- `direnv allow` to enter the devshell (`.envrc` → shared nix-devenv shell),
+  which provides `tofu`, `tflint`, `terraform-docs`, and `pre-commit`.
+- `pre-commit run --all-files` (fmt, validate, tflint, markdownlint).
+- `tofu test` runs the plan-time naming-contract assertions in `tests/`.
+- `examples/complete` is validated in CI; update it when inputs change.
+- Keep changes scoped — this module provisions exactly one per-project state
+  backend, nothing more.
 
 Breaking changes ship as a new major version (`v1`, `v2`, …) so existing
 consumers can stay pinned to a prior `ref` until they migrate.
