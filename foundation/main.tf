@@ -51,35 +51,21 @@ resource "aws_iam_user_policy" "tofu_admin" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "CreateAndConfigure"
-        Effect = "Allow"
-        Action = [
-          "s3:CreateBucket",
-          "s3:PutBucketVersioning",
-          "s3:PutEncryptionConfiguration",
-          "s3:PutBucketPublicAccessBlock",
-          "s3:PutLifecycleConfiguration",
-          "s3:PutBucketPolicy",
-          "s3:PutBucketTagging",
-          "s3:PutBucketOwnershipControls",
-        ]
+        # Bucket-level admin only: s3:* scoped to the bucket ARN (not the /*
+        # object ARN). Object actions require the .../* resource, which is
+        # intentionally absent — so tofu-admin can never read or write state
+        # objects. This breadth is needed because the aws_s3_bucket resource
+        # reads back ~20 bucket sub-configs (CORS, website, logging, …) on refresh.
+        Sid      = "BucketAdmin"
+        Effect   = "Allow"
+        Action   = "s3:*"
         Resource = "arn:aws:s3:::tfstate-*"
       },
       {
-        Sid    = "ReadForRefresh"
-        Effect = "Allow"
-        Action = [
-          "s3:GetBucketVersioning",
-          "s3:GetEncryptionConfiguration",
-          "s3:GetBucketPublicAccessBlock",
-          "s3:GetLifecycleConfiguration",
-          "s3:GetBucketPolicy",
-          "s3:GetBucketTagging",
-          "s3:GetBucketOwnershipControls",
-          "s3:GetBucketAcl",
-          "s3:GetBucketLocation",
-          "s3:ListBucket",
-        ]
+        # Never tear down a state bucket from this identity.
+        Sid      = "DenyBucketDeletion"
+        Effect   = "Deny"
+        Action   = "s3:DeleteBucket"
         Resource = "arn:aws:s3:::tfstate-*"
       },
     ]

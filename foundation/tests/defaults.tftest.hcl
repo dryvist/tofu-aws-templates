@@ -16,7 +16,7 @@ run "creates_both_identities" {
   }
 
   assert {
-    condition     = strcontains(aws_iam_user_policy.tofu_admin.policy, "s3:CreateBucket") && !strcontains(aws_iam_user_policy.tofu_admin.policy, "s3:GetObject")
-    error_message = "tofu-admin must create buckets but have no state-object access."
+    condition     = strcontains(aws_iam_user_policy.tofu_admin.policy, "s3:*") && strcontains(aws_iam_user_policy.tofu_admin.policy, "s3:DeleteBucket") && !strcontains(aws_iam_user_policy.tofu_admin.policy, "tfstate-*/*")
+    error_message = "tofu-admin must have bucket-level admin (s3:* on the bucket ARN), deny DeleteBucket, and no object (/*) access."
   }
 }
