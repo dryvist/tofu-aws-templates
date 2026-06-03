@@ -1,7 +1,7 @@
 # terraform-aws-template
 
-Starting template for any new AWS-backed Terraform / OpenTofu / Terragrunt
-repo. The module bootstraps everything a new repo needs to use AWS for state:
+Starting template for any new AWS-backed OpenTofu repo. The module
+bootstraps everything a new repo needs to use AWS for state:
 
 - S3 state bucket (SSE-S3 AES-256, versioned, public-access-blocked, TLS-only)
 - IAM role `tf-<project>` with a combined trust policy:
@@ -13,19 +13,26 @@ repo. The module bootstraps everything a new repo needs to use AWS for state:
 - IAM permissions policy scoped to that one bucket only, plus an optional
   `additional_policy_json` for projects that manage AWS resources beyond state
 
-S3 native locking (`use_lockfile = true`, Terraform 1.10+ / OpenTofu 1.10+)
-replaces DynamoDB lock tables. SSE-S3 replaces SSE-KMS — same AES-256 cipher,
+S3 native locking (`use_lockfile = true`, OpenTofu 1.10+) replaces
+DynamoDB lock tables. SSE-S3 replaces SSE-KMS — same AES-256 cipher,
 no per-key or per-API-call cost. State access is gated at the IAM role's
 trust policy, not at a KMS key policy. Cross-region replication, access
 logging, and event notifications are intentionally omitted to keep the backend
 cheap — state durability comes from versioning.
+
+**Tooling.** This fleet standardizes on [OpenTofu](https://opentofu.org)
+(MPL 2.0), not Terraform (BUSL 1.1) — run everything with `tofu`. The
+`terraform {}` blocks and the `tf-*` / `terraform` names below are HCL syntax
+and fleet IAM identities, not the Terraform binary. [Terragrunt](https://terragrunt.gruntwork.io)
+(MIT) is used only where multi-unit orchestration is needed; single-stack repos
+like this one use plain OpenTofu.
 
 Operator-facing walkthrough:
 <https://docs.jacobpevans.com/infrastructure/terraform/aws-bootstrap>.
 
 ## Installation
 
-This is a remote Terraform module. The consuming root module references it
+This is a remote OpenTofu module. The consuming root module references it
 by its git URL with a pinned ref:
 
 ```hcl
@@ -36,8 +43,8 @@ module "state_backend" {
 }
 ```
 
-No `terraform init` step beyond what your root module already runs —
-Terraform fetches the module on first init.
+No `tofu init` step beyond what your root module already runs —
+OpenTofu fetches the module on first init.
 
 ## Usage
 
@@ -48,7 +55,7 @@ terraform {
   required_version = ">= 1.10"
 
   # First apply runs with local state. Once the bucket exists,
-  # uncomment this block and run `terraform init -migrate-state`
+  # uncomment this block and run `tofu init -migrate-state`
   # to lift the bootstrap state into the bucket it just created.
   #
   # backend "s3" {
@@ -92,20 +99,20 @@ output "state_key_prefix" { value = module.state_backend.state_key_prefix }
 Then:
 
 ```bash
-terraform init
-terraform apply
-terraform output -raw backend_config   # paste into consuming repo's backend.tf
+tofu init
+tofu apply
+tofu output -raw backend_config   # paste into consuming repo's backend.tf
 ```
 
 After the first apply succeeds, uncomment the `backend "s3"` block above
 (substituting the bucket name the module just emitted) and run
-`terraform init -migrate-state` to lift the bootstrap state into the bucket.
+`tofu init -migrate-state` to lift the bootstrap state into the bucket.
 
 ## Prerequisites
 
 - Admin AWS credentials in the shell (`aws sts get-caller-identity`
   returns an admin ARN).
-- Terraform ≥ 1.10 or OpenTofu ≥ 1.10 (S3 native locking).
+- OpenTofu ≥ 1.10 (S3 native locking).
 - GitHub Actions OIDC provider exists in the AWS account. Check:
 
   ```bash
@@ -195,7 +202,7 @@ terraform {
 
 No `assume_role` block in `backend.tf` — aws-vault (local) and
 `aws-actions/configure-aws-credentials@v4` (CI) perform the AssumeRole
-before Terraform runs and export the role's STS credentials into the
+before OpenTofu runs and export the role's STS credentials into the
 subprocess environment. See the [consuming-repo guide][consuming] for
 `~/.aws/config` and the GitHub Actions workflow shape.
 
