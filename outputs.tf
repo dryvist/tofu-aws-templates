@@ -1,5 +1,5 @@
 output "state_bucket" {
-  description = "Name of the S3 bucket for Terraform state."
+  description = "Name of the S3 bucket for OpenTofu state."
   value       = aws_s3_bucket.state.bucket
 }
 

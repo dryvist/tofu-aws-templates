@@ -24,7 +24,7 @@ locals {
 
   tags = {
     Project     = var.project
-    ManagedBy   = "Terraform"
+    ManagedBy   = "OpenTofu"
     Repo        = "${var.github_org}/${var.github_repo}"
     Environment = "bootstrap"
   }
