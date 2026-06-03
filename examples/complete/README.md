@@ -1,24 +1,23 @@
 # Complete example
 
-Bootstraps a state backend and `tf-<project>` role for a consuming repo,
-exercising every input: `source_principal_arns` (no-MFA base identity assume),
-`operator_user_arns` (MFA), and `additional_policy_json` (extra permissions).
+Shows a project consuming both modules — `modules/iam` (the `tf-<project>` role)
+and `modules/storage` (the state bucket). In production they are applied by
+different identities (`iam-user` and `tofu-admin`); here they are validated
+together for documentation. Account IDs are the AWS documentation placeholder
+(`123456789012`).
 
 ## Installation
 
-This example consumes the module at the repo root via a relative
-`source = "../../"`. No extra installation — `tofu init` fetches the AWS provider.
+Consumes the modules at the repo root via relative `source = "../../modules/*"`.
+`tofu init` fetches the AWS provider.
 
 ## Usage
-
-Validated in CI with `tofu validate` (never applied; the account IDs are the AWS
-documentation placeholder `123456789012`):
 
 ```bash
 tofu init -backend=false
 tofu validate
 ```
 
-To actually bootstrap a project, copy this directory, set real inputs, run with
-admin credentials (`aws-vault exec iam-user -- tofu apply`), then paste
-`tofu output -raw backend_config` into the consuming repo's `backend.tf`.
+To bootstrap a real project, apply the two modules separately with the right
+identity (`iam-user` for `iam`, `tofu-admin` for `storage`), then paste
+`tofu output -raw backend_config` into the consuming repo's backend.
