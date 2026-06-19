@@ -73,3 +73,7 @@ Before opening a PR (in the devshell — `direnv allow`):
 ## License
 
 [Apache-2.0](LICENSE).
+
+---
+
+> Part of a [larger ecosystem of ~40 repos](https://docs.jacobpevans.com) — see how it all fits together.
