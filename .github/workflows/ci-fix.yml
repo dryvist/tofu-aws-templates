@@ -1,0 +1,25 @@
+# CI Fix (Claude) — thin caller for dryvist/ai-workflows cc-ci-fix.
+# When the CI workflow fails on a PR branch, Claude analyzes the logs and pushes
+# a fix commit to that branch (max 2 attempts/PR). Stops before merge.
+name: CI Fix (Claude)
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: write
+  id-token: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  ci-fix:
+    uses: dryvist/ai-workflows/.github/workflows/cc-ci-fix.yml@main
+    secrets: inherit
+    with:
+      repo_context: "OpenTofu AWS module templates (foundation/, modules/iam, modules/storage, examples/complete)."
+      ci_structure: "ci.yml runs per-directory tofu init/validate/test plus a 'Format and Lint' job: tofu fmt -check -recursive and tflint."
+      extra_tools: "Bash(tofu:*)"
