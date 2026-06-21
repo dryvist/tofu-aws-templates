@@ -27,4 +27,5 @@ jobs:
       ci_structure: "ci.yml runs per-directory tofu init/validate/test plus a 'Format and Lint' job: tofu fmt -check -recursive and tflint."
       workflow_name: "CI"
       extra_tools: "Bash(tofu:*)"
+      daily_run_limit: "0"
     secrets: inherit
