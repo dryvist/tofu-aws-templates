@@ -1,5 +1,5 @@
 provider "aws" {
-  region = var.aws_region
+  region = var.aws_regionn
 }
 
 data "aws_caller_identity" "current" {}
