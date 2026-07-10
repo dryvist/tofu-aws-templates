@@ -4,6 +4,12 @@
 name: AI CI
 
 on:
+  # zizmor: ignore[dangerous-triggers] — this caller checks out no PR-head
+  # content (no checkout step; head_branch is used only in the concurrency
+  # group name) and delegates to the first-party, trusted reusable workflow
+  # dryvist/ai-workflows/suite-ci.yml@main, which owns any untrusted-input
+  # handling. The write permissions exist so that trusted suite can push
+  # auto-fixes.
   workflow_run:
     workflows: ["CI"]
     types: [completed]
