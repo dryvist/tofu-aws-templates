@@ -1,3 +1,5 @@
+# fmt/init/validate/tflint run in the org CI gate (`tofu_ci`, per directory);
+# this keeps `tofu test`, which the gate does not run.
 name: CI
 
 on:
@@ -10,24 +12,6 @@ permissions:
   contents: read
 
 jobs:
-  validate:
-    name: Validate (${{ matrix.dir }})
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        dir: [foundation, modules/iam, modules/storage, examples/complete]
-    steps:
-      - uses: actions/checkout@v6
-      - uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2
-      - name: Init
-        run: tofu init -backend=false
-        working-directory: ${{ matrix.dir }}
-      - name: Validate
-        run: tofu validate -no-color
-        working-directory: ${{ matrix.dir }}
-
   test:
     name: Test (${{ matrix.dir }})
     runs-on: ubuntu-latest
@@ -37,34 +21,9 @@ jobs:
       matrix:
         dir: [foundation, modules/iam, modules/storage]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2
       - run: tofu init -backend=false
         working-directory: ${{ matrix.dir }}
       - run: tofu test -no-color
         working-directory: ${{ matrix.dir }}
-
-  lint:
-    name: Format and Lint
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v6
-      - uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2
-      - name: Format check
-        run: tofu fmt -check -recursive
-      - uses: terraform-linters/setup-tflint@90f302c255ef959cbfb4bd10581afecdb7ece3e6 # v4
-      - run: tflint --init
-      - name: TFLint
-        run: >-
-          tflint --recursive --minimum-failure-severity=error
-          --only=terraform_deprecated_interpolation
-          --only=terraform_deprecated_index
-          --only=terraform_unused_declarations
-          --only=terraform_comment_syntax
-          --only=terraform_documented_outputs
-          --only=terraform_documented_variables
-          --only=terraform_typed_variables
-          --only=terraform_naming_convention
-          --only=terraform_required_version
-          --only=terraform_required_providers
