@@ -1,24 +1,42 @@
+# Hook set follows the dryvist terraform template (precommit/templates/terraform.yaml).
+# Repo-local additions kept on top of it: mixed-line-ending, and pre-push hook install.
+# tflint reads the org canonical config materialized at .tflint.hcl; markdownlint reads .markdownlint.yml.
 default_install_hook_types: [pre-commit, pre-push]
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
       - id: check-yaml
+      - id: check-toml
       - id: check-json
+      - id: check-merge-conflict
       - id: check-added-large-files
-        args: ['--maxkb=500']
+        args: [--maxkb=500]
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
       - id: detect-private-key
       - id: mixed-line-ending
         args: ['--fix=lf']
 
-  - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.41.0
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.22.1
     hooks:
-      - id: markdownlint
-        args: ['--config', '.markdownlint.yml']
+      - id: markdownlint-cli2
+        exclude: ^CHANGELOG\.md$
+
+  - repo: https://github.com/woodruffw/zizmor-pre-commit
+    rev: v1.26.1
+    hooks:
+      - id: zizmor
+        files: ^\.github/workflows/.*\.ya?ml$
+        args:
+          - --persona=regular
+          - --min-severity=medium
+          - --min-confidence=medium
+          - --config
+          - zizmor.yml
 
   # Terraform/OpenTofu static checks. Validate runs with -backend=false so it
   # needs no AWS credentials. tofu provides the binary via the .envrc devshell.
@@ -28,17 +46,9 @@ repos:
       - id: terraform_fmt
       - id: terraform_validate
         args:
+          - --hook-config=--retry-once-with-cleanup=true
           - --tf-init-args=-backend=false
       - id: terraform_tflint
         args:
-          - --args=--only=terraform_deprecated_interpolation
-          - --args=--only=terraform_deprecated_index
-          - --args=--only=terraform_unused_declarations
-          - --args=--only=terraform_comment_syntax
-          - --args=--only=terraform_documented_outputs
-          - --args=--only=terraform_documented_variables
-          - --args=--only=terraform_typed_variables
-          - --args=--only=terraform_module_pinned_source
-          - --args=--only=terraform_naming_convention
-          - --args=--only=terraform_required_version
-          - --args=--only=terraform_required_providers
+          - --args=--config=__GIT_WORKING_DIR__/.tflint.hcl
+      - id: terraform_docs
