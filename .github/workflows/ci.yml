@@ -7,6 +7,13 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    paths:
+      - "**.tf"
+      - "**.tofu"
+      - "**.tfvars"
+      - "**.tftest.hcl"
+      - ".terraform.lock.hcl"
+      - ".github/workflows/ci.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
