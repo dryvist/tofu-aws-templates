@@ -32,6 +32,7 @@ jobs:
       actions: write
     uses: dryvist/.github/.github/workflows/_ci-gate.yml@main
     with:
+      profile: tofu
       tofu_working_directories: '["foundation","modules/iam","modules/storage","examples/complete"]'
       tofu_ci: true
       filters: |
