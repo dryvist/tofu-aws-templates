@@ -7,7 +7,7 @@ on:
   # zizmor: ignore[dangerous-triggers] — this caller checks out no PR-head
   # content (no checkout step; head_branch is used only in the concurrency
   # group name) and delegates to the first-party, trusted reusable workflow
-  # dryvist/ai-workflows/suite-ci.yml@main, which owns any untrusted-input
+  # dryvist/ai-workflows/suite-ci.yml@<40-hex commit SHA> # vX.Y.Z, which owns any untrusted-input
   # handling. The write permissions exist so that trusted suite can push
   # auto-fixes.
   workflow_run:
@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   ci-suite:
-    uses: dryvist/ai-workflows/.github/workflows/suite-ci.yml@main
+    uses: dryvist/ai-workflows/.github/workflows/suite-ci.yml@d1d335bdb010b47108374e8a6152a7926477a32a # v0.48.1
     with:
       repo_context: "OpenTofu AWS module templates (foundation/, modules/iam, modules/storage, examples/complete)."
       ci_structure: "ci.yml runs per-directory tofu init/validate/test plus a 'Format and Lint' job: tofu fmt -check -recursive and tflint."
