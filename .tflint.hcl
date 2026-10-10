@@ -41,3 +41,12 @@ rule "terraform_required_providers" {
 rule "terraform_required_version" {
   enabled = true
 }
+
+# Repo-local additions on top of the org canonical (not in the recommended preset).
+rule "terraform_comment_syntax" {
+  enabled = true
+}
+
+rule "terraform_naming_convention" {
+  enabled = true
+}
