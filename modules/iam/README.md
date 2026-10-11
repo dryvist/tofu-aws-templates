@@ -9,7 +9,7 @@ GitHub OIDC (CI) + the `tofu` base identity (no MFA) + optional MFA operators.
 
 ```hcl
 module "tf_role" {
-  source = "git::https://github.com/dryvist/tofu-aws-templates.git//modules/iam?ref=v0.3.0"
+  source = "git::https://github.com/dryvist/tofu-aws-templates.git//modules/iam?ref=<release tag>"
 }
 ```
 
@@ -17,7 +17,7 @@ module "tf_role" {
 
 ```hcl
 module "tf_role" {
-  source      = "git::https://github.com/dryvist/tofu-aws-templates.git//modules/iam?ref=v0.3.0"
+  source      = "git::https://github.com/dryvist/tofu-aws-templates.git//modules/iam?ref=<release tag>"
   project     = "unifi"
   github_org  = "dryvist"
   github_repo = "tofu-unifi"

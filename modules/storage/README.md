@@ -10,7 +10,7 @@ to keep the backend cheap; durability comes from versioning.
 
 ```hcl
 module "state_bucket" {
-  source = "git::https://github.com/dryvist/tofu-aws-templates.git//modules/storage?ref=v0.3.0"
+  source = "git::https://github.com/dryvist/tofu-aws-templates.git//modules/storage?ref=<release tag>"
 }
 ```
 
@@ -18,7 +18,7 @@ module "state_bucket" {
 
 ```hcl
 module "state_bucket" {
-  source     = "git::https://github.com/dryvist/tofu-aws-templates.git//modules/storage?ref=v0.3.0"
+  source     = "git::https://github.com/dryvist/tofu-aws-templates.git//modules/storage?ref=<release tag>"
   project    = "unifi"
   aws_region = "us-east-2"
 }

@@ -38,7 +38,7 @@ Modules are sourced by git URL with a pinned ref:
 
 ```hcl
 module "tf_role" {
-  source = "git::https://github.com/dryvist/tofu-aws-templates.git//modules/iam?ref=v0.3.0"
+  source = "git::https://github.com/dryvist/tofu-aws-templates.git//modules/iam?ref=<release tag>"
 }
 ```
 
