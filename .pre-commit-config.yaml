@@ -41,7 +41,7 @@ repos:
   # Terraform/OpenTofu static checks. Validate runs with -backend=false so it
   # needs no AWS credentials. tofu provides the binary via the .envrc devshell.
   - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: v1.92.0
+    rev: v1.109.2
     hooks:
       - id: terraform_fmt
       - id: terraform_validate
