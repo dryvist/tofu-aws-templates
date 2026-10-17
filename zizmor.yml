@@ -12,7 +12,7 @@
 # `hash-pin` default.
 #
 # `dryvist/*` is the org itself: first-party reusable workflows (e.g.
-# dryvist/.github's `_nix-validate.yml`, dryvist/ai-workflows) are
+# JacobPEvans/.github's `_nix-validate.yml`, JacobPEvans/.github-ai) are
 # referenced via `@main` per the self-reference convention, so they must
 # be trusted here rather than SHA-pinned.
 rules:
