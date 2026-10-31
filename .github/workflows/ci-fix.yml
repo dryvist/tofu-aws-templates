@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   ci-suite:
-    uses: JacobPEvans/.github-ai/.github/workflows/suite-ci.yml@v1
+    uses: JacobPEvans/.github-ai/.github/workflows/suite-ci.yml@v2
     with:
       repo_context: "OpenTofu AWS module templates (foundation/, modules/iam, modules/storage, examples/complete)."
       ci_structure: "ci.yml runs per-directory tofu init/validate/test plus a 'Format and Lint' job: tofu fmt -check -recursive and tflint."
