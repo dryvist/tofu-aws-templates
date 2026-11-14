@@ -21,13 +21,13 @@ repos:
         args: ['--fix=lf']
 
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.24.0
+    rev: v0.24.1
     hooks:
       - id: markdownlint-cli2
         exclude: ^CHANGELOG\.md$
 
   - repo: https://github.com/woodruffw/zizmor-pre-commit
-    rev: v1.31.1
+    rev: v1.32.0
     hooks:
       - id: zizmor
         files: ^\.github/workflows/.*\.ya?ml$
